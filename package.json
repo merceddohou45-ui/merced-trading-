@@ -8,7 +8,7 @@
     "start": "next start",
     "prisma": "prisma",
     "ws": "ts-node src/server/websocket/server.ts",
-    "worker": "ts-node src/server/worker/worker.ts",
+    "worker": "ts-node src/workers/refreshWorker.ts",
     "test": "vitest --run"
   },
   "dependencies": {
