@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: testdb
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d testdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  worker:
+    image: node:18
+    working_dir: /app
+    volumes:
+      - ./:/app:delegated
+      - /app/node_modules
+    environment:
+      DATABASE_URL: postgresql://test:pass@db:5432/testdb
+      BROKERS: "binance,bybit"
+      REFRESH_CRON: "*/5 * * * *"
+      REFRESH_MAX_RETRIES: "3"
+      REFRESH_BACKOFF_BASE_MS: "1000"
+      NODE_ENV: development
+    depends_on:
+      db:
+        condition: service_healthy
+    command: /bin/sh -c "npm ci && npx prisma generate && sleep 2 && npm run worker"
+    restart: unless-stopped
+
+volumes:
+  db-data:
