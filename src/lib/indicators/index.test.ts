@@ -7,7 +7,7 @@ describe('indicators - SMA', () => {
   });
 
   it('throws on invalid period', () => {
-    expect(() => sma([1, 2, 3], 0)).toThrow();
+    expect(() => sma([1, 2, 3], 0)).toThrow('sma: period must be > 0');
   });
 
   it('computes SMA correctly', () => {
@@ -87,6 +87,61 @@ describe('indicators - Stochastic', () => {
   });
 
   it('throws when arrays lengths mismatch', () => {
-    expect(() => stochastic([1,2], [1], [1,2])).toThrow();
+    expect(() => stochastic([1,2], [1], [1,2])).toThrow('stochastic: highs, lows, closes must have the same length');
+  });
+});
+
+// Additional edge-case tests
+
+describe('indicators - Edge cases and performance sanity', () => {
+  it('handles extremely large datasets (performance sanity)', () => {
+    const n = 10000;
+    const vals = new Array<number>(n).fill(0).map((_, i) => Math.sin(i / 10) + i * 0.0001);
+    const start = Date.now();
+    const mid = sma(vals, 14);
+    const sd = rollingStd(vals, 14);
+    const bb = bollingerBands(vals, 14, 2);
+    const end = Date.now();
+    const duration = end - start;
+    // Should complete reasonably fast (tunable threshold)
+    expect(mid.length).toBe(n);
+    expect(sd.length).toBe(n);
+    expect(bb.mid.length).toBe(n);
+    expect(duration).toBeLessThan(5000);
+  }, 10000);
+
+  it('flat market scenario: constant prices', () => {
+    const n = 200;
+    const price = 123.45;
+    const vals = new Array<number>(n).fill(price);
+    const highs = new Array<number>(n).fill(price);
+    const lows = new Array<number>(n).fill(price);
+    const mid = sma(vals, 14);
+    const sd = rollingStd(vals, 14);
+    const bb = bollingerBands(vals, 14, 2);
+    const r = rsi(vals, 14);
+    // after warmup, mid equals the constant price, std == 0, RSI == 50
+    expect(mid[n - 1]).toBeCloseTo(price);
+    expect(sd[n - 1]).toBeCloseTo(0);
+    expect(bb.mid[n - 1]).toBeCloseTo(price);
+    expect(bb.upper[n - 1]).toBeCloseTo(price);
+    expect(bb.lower[n - 1]).toBeCloseTo(price);
+    expect(r[n - 1]).toBe(50);
+  });
+
+  it('spike and drop detection scenarios', () => {
+    const base = 100;
+    // build a series with stable price then a spike
+    const valsSpike = new Array<number>(30).fill(base);
+    valsSpike.push(base * 5); // sudden spike
+    // use small RSI period to detect quickly
+    const rSpike = rsi(valsSpike, 5);
+    expect(rSpike[rSpike.length - 1]).toBeGreaterThan(70);
+
+    // now a sudden drop
+    const valsDrop = new Array<number>(30).fill(base);
+    valsDrop.push(base * 0.2); // sudden drop
+    const rDrop = rsi(valsDrop, 5);
+    expect(rDrop[rDrop.length - 1]).toBeLessThan(30);
   });
 });

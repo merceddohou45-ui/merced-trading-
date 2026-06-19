@@ -12,7 +12,7 @@
 
 export function sma(values: number[], period: number): number[] {
   const n = values.length;
-  if (period <= 0) throw new Error('period must be > 0');
+  if (period <= 0) throw new Error(`sma: period must be > 0. Received ${period}`);
   const out = new Array<number>(n).fill(NaN);
   if (n === 0) return out;
 
@@ -29,7 +29,7 @@ export function sma(values: number[], period: number): number[] {
 export function rollingStd(values: number[], period: number): number[] {
   // population stddev over window of `period`. Uses rolling sums for O(n).
   const n = values.length;
-  if (period <= 0) throw new Error('period must be > 0');
+  if (period <= 0) throw new Error(`rollingStd: period must be > 0. Received ${period}`);
   const out = new Array<number>(n).fill(NaN);
   if (n === 0) return out;
 
@@ -73,7 +73,7 @@ export function bollingerBands(values: number[], period = 20, stdMultiplier = 2)
 export function rsi(values: number[], period = 14): number[] {
   const n = values.length;
   const out = new Array<number>(n).fill(NaN);
-  if (period <= 0) throw new Error('period must be > 0');
+  if (period <= 0) throw new Error(`rsi: period must be > 0. Received ${period}`);
   if (n === 0) return out;
   if (n === 1) return out;
 
@@ -135,8 +135,8 @@ export function stochastic(highs: number[], lows: number[], closes: number[], kP
   const kRaw = new Array<number>(n).fill(NaN);
   const kSmoothed = new Array<number>(n).fill(NaN);
   const d = new Array<number>(n).fill(NaN);
-  if (kPeriod <= 0 || kSmoothing <= 0 || dPeriod <= 0) throw new Error('periods must be > 0');
-  if (highs.length !== n || lows.length !== n) throw new Error('highs, lows, closes must have same length');
+  if (kPeriod <= 0 || kSmoothing <= 0 || dPeriod <= 0) throw new Error(`stochastic: periods must be > 0. Received kPeriod=${kPeriod}, kSmoothing=${kSmoothing}, dPeriod=${dPeriod}`);
+  if (highs.length !== n || lows.length !== n) throw new Error('stochastic: highs, lows, closes must have the same length');
   if (n === 0) return { k: kSmoothed, d };
 
   // Rolling highest high and lowest low using deque of indexes for O(n)
@@ -168,24 +168,11 @@ export function stochastic(highs: number[], lows: number[], closes: number[], kP
   function smaArray(vals: number[], p: number) {
     const out = new Array<number>(n).fill(NaN);
     let sum = 0;
-    let count = 0;
-    // We'll treat NaN in vals as zero but mark output NaN if any NaN in window (so behavior aligns with indicator expectations)
-    // Simpler: compute SMA only when all values in window are finite
     for (let i = 0; i < n; i++) {
-      if (Number.isFinite(vals[i])) {
-        sum += vals[i];
-        count++;
-      } else {
-        // mark by incrementing count but also track presence
-        // We'll use a sliding approach checking every window
-        // For simplicity compute window explicitly when i>=p-1
-      }
-      if (i >= p) {
-        // subtract leaving element if finite
-        if (Number.isFinite(vals[i - p])) { sum -= vals[i - p]; count--; }
-      }
+      if (Number.isFinite(vals[i])) sum += vals[i];
+      if (i >= p && Number.isFinite(vals[i - p])) sum -= vals[i - p];
       if (i >= p - 1) {
-        // window indices [i-p+1 .. i]
+        // ensure all window values are finite
         let valid = true;
         for (let j = i - p + 1; j <= i; j++) {
           if (!Number.isFinite(vals[j])) { valid = false; break; }

@@ -9,7 +9,7 @@
     "prisma": "prisma",
     "ws": "ts-node src/server/websocket/server.ts",
     "worker": "ts-node src/server/worker/worker.ts",
-    "test": "vitest"
+    "test": "vitest --coverage"
   },
   "dependencies": {
     "next": "14.0.0",
