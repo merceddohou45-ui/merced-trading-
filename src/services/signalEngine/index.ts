@@ -337,7 +337,7 @@ export function aggregateSignals(
     if (chosenSeries.indicators && chosenSeries.indicators.bb && Number.isFinite(Number(chosenSeries.indicators.bb.mid)) && Number.isFinite(Number(chosenSeries.indicators.bb.upper))) {
       const mid = chosenSeries.indicators.bb.mid as number;
       const upper = chosenSeries.indicators.bb.upper as number;
-      sigma = Math.abs(upper - mid) / (configFallbackStdDiv ?? 1);
+      sigma = Math.abs(upper - mid) / 1; // deterministic safe fallback divisor
     }
   }
 
