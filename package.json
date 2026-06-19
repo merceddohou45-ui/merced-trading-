@@ -9,7 +9,7 @@
     "prisma": "prisma",
     "ws": "ts-node src/server/websocket/server.ts",
     "worker": "ts-node src/server/worker/worker.ts",
-    "test": "vitest --coverage"
+    "test": "vitest --run"
   },
   "dependencies": {
     "next": "14.0.0",
@@ -19,7 +19,8 @@
     "@prisma/client": "5.11.0",
     "bcrypt": "5.1.0",
     "jsonwebtoken": "9.0.0",
-    "ws": "8.13.0"
+    "ws": "8.13.0",
+    "node-cron": "^3.0.2"
   },
   "devDependencies": {
     "typescript": "5.4.2",
