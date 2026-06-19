@@ -1,5 +1,5 @@
 import { getBrokerSymbols } from '@/lib/canonicalRegistry';
-import { validateAssetSymbol } from '@/lib/assets';
+import { validateAssetSymbol } from '@/lib/validation';
 
 // Scanner processes canonical symbols only. Processing function is pure and synchronous.
 export function processSymbol(symbol: string) {
@@ -8,8 +8,8 @@ export function processSymbol(symbol: string) {
   return { symbol, processedAt: new Date(0).toISOString() };
 }
 
-export function scanAllMarkets(broker: string) {
-  const symbols = getBrokerSymbols(broker);
+export async function scanAllMarkets(broker: string) {
+  const symbols = await getBrokerSymbols(broker);
   const results: Record<string, any> = {};
   for (const s of symbols) {
     if (!validateAssetSymbol(s)) {

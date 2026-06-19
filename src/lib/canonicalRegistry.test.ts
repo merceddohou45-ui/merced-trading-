@@ -1,18 +1,36 @@
-import { describe, it, expect } from 'vitest';
-import { updateBrokerSymbols, getBrokerSymbols, refreshBrokerSymbols, isCanonical } from '@/lib/canonicalRegistry';
-import { validateAssetSymbol } from '@/lib/assets';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { refreshBrokerSymbols, updateBrokerSymbols, getBrokerSymbols } from '@/lib/canonicalRegistry';
+import { prisma } from '@/lib/prisma';
 
-// Using updateBrokerSymbols to simulate registry population
-describe('canonicalRegistry', () => {
-  it('stores and returns broker symbols', () => {
-    updateBrokerSymbols('testBroker', ['BTCUSDT', 'XAUUSD', 'INVALID$', 'btcusd']);
-    const syms = getBrokerSymbols('testBroker');
-    // only valid uppercase symbols remain
+beforeEach(async () => {
+  // clean table before each test
+  await prisma.brokerSymbol.deleteMany();
+});
+
+describe('canonicalRegistry persistence & upsert behavior (Postgres)', () => {
+  it('persists symbols across refresh and update cycles', async () => {
+    // simulate initial population
+    await updateBrokerSymbols('test', ['BTCUSDT', 'XAUUSD']);
+    let syms = await getBrokerSymbols('test');
     expect(syms).toContain('BTCUSDT');
     expect(syms).toContain('XAUUSD');
-    expect(syms).not.toContain('INVALID$');
-    expect(syms).not.toContain('btcusd');
-    expect(isCanonical('testBroker', 'BTCUSDT')).toBe(true);
-    expect(isCanonical('testBroker', 'btcusd')).toBe(false);
+
+    // simulate refresh with changed set
+    await updateBrokerSymbols('test', ['XAUUSD', 'EURUSD']);
+    syms = await getBrokerSymbols('test');
+    // BTCUSDT should be marked inactive
+    expect(syms).not.toContain('BTCUSDT');
+    expect(syms).toContain('XAUUSD');
+    expect(syms).toContain('EURUSD');
+  });
+
+  it('marks missing symbols inactive on refresh', async () => {
+    await updateBrokerSymbols('t2', ['A', 'B', 'C']);
+    await updateBrokerSymbols('t2', ['B', 'D']);
+    const syms = await getBrokerSymbols('t2');
+    expect(syms).toContain('B');
+    expect(syms).toContain('D');
+    expect(syms).not.toContain('A');
+    expect(syms).not.toContain('C');
   });
 });
