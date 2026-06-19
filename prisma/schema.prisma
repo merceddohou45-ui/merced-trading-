@@ -1,0 +1,62 @@
+// Prisma schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  passwordHash  String?
+  createdAt     DateTime @default(now())
+  apiKeys       ApiKey[]
+  signals       Signal[]
+  trades        Trade[]
+}
+
+model ApiKey {
+  id           String   @id @default(cuid())
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String
+  broker       String
+  encryptedKey String
+  encryptedSecret String
+  createdAt    DateTime @default(now())
+}
+
+model Signal {
+  id         String   @id @default(cuid())
+  user       User?    @relation(fields: [userId], references: [id])
+  userId     String?
+  asset      String
+  timeframe  String
+  direction  String
+  entry      Float
+  stopLoss   Float?
+  takeProfits Float[]
+  riskPct    Float
+  confidence Int
+  reasons    String[]
+  createdAt  DateTime @default(now())
+  resolvedAt DateTime?
+}
+
+model Trade {
+  id         String   @id @default(cuid())
+  user       User?    @relation(fields: [userId], references: [id])
+  userId     String?
+  signalId   String?
+  asset      String
+  direction  String
+  entry      Float
+  exit       Float?
+  pnl        Float?
+  status     String   @default("OPEN")
+  createdAt  DateTime @default(now())
+  closedAt   DateTime?
+}
