@@ -43,7 +43,7 @@ async function fetchBinanceKlines(
   timeframe = '1m',
   limit = 200
 ): Promise<Candle[]> {
-  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${timeframe}&limit=${limit}`;
+  const url = `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(timeframe)}&limit=${limit}`;
   const res = await fetch(url);
 
   if (!res.ok) {
@@ -91,7 +91,9 @@ function syntheticCandles(base = 100, count = 200): Candle[] {
 
   for (let i = count - 1; i >= 0; i--) {
     const t = now - i * step;
-    const delta = (Math.random() - 0.5) * (base * 0.002);
+    const seed = i * 999;
+const pseudo = Math.sin(seed) * 10000;
+const delta = (pseudo - Math.floor(pseudo)) * base * 0.002;
 
     const open = price;
     const close = price + delta;
@@ -135,6 +137,15 @@ function computeIndicators(ohlc: OHLC) {
   const bb = indicators.bollingerBands(closes, 20, 2);
 
   const i = closes.length - 1;
+
+if (i < 0) {
+  return {
+    lastClose: NaN,
+    rsi: NaN,
+    upper: NaN,
+    lower: NaN,
+  };
+}
 
   return {
     lastClose: closes[i],
@@ -268,9 +279,12 @@ export async function generateSignalForSymbol(
   try {
     let candles = await fetchHistoricalOhlcv(broker, symbol, timeframe, opts.limit ?? 200);
 
-    if (!candles.length || candles.length < 30) {
-      candles = syntheticCandles(100, 200);
-    }
+if (!candles || candles.length < 30) {
+  console.warn('Using synthetic candles for', symbol);
+  candles = syntheticCandles(100, 200);
+}
+
+if (!candles.length) return null;
 
     const ohlc = toOhlc(candles);
     const ind = computeIndicators(ohlc);
