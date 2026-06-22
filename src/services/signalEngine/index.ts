@@ -43,7 +43,7 @@ async function fetchBinanceKlines(
   timeframe = '1m',
   limit = 200
 ): Promise<Candle[]> {
-  const url = `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(timeframe)}&limit=${limit}`;
+  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${timeframe}&limit=${limit}`;
   const res = await fetch(url);
 
   if (!res.ok) {
